@@ -43,7 +43,6 @@ describe('getRandomCell', () => {
 describe('buildEmptyMatrix', () => {
   it('should build matrix with all 0s', () => {
     const board = buildEmptyMatrix(5, 5);
-    debugger;
     expect(board[0]).toBeArrayOfSize(5);
   });
 });

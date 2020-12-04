@@ -7,16 +7,24 @@ import React, {
 import { css } from '@emotion/core';
 
 import Board from 'models/Board';
+import Cell from 'models/Cell';
 import GameButton from './components/GameButton';
 import theme from 'styles/theme';
+import { GameValues } from '../../stores/AppStoreProvider';
+
+export const getCellFromEventTarget = (target: any): Cell => {
+  const row: number = parseInt(target.getAttribute('data-row'), 10);
+  const col: number = parseInt(target.getAttribute('data-column'), 10);
+  return [row, col];
+};
 
 export interface IGameScreenProps {
   board: Board;
   game: Board;
   flags: Board;
   isGameActive: boolean;
-  play: (row: number, column: number) => void;
-  flag: (row: number, column: number) => void;
+  play: (cell: Cell) => void;
+  flag: (cell: Cell) => void;
 }
 
 const styles = {
@@ -43,26 +51,56 @@ export default ({
   const gameBoardEl = useRef(null);
 
   const onClick = (event: any) => {
-    debugger;
+    event.preventDefault();
+    event.stopPropagation();
+    const cell = getCellFromEventTarget(event.target);
+    play(cell);
   };
   const onRightClick = (event: MouseEvent) => {
     event.preventDefault();
-    console.log('right click', event.target);
+    event.stopPropagation();
+    const cell = getCellFromEventTarget(event.target);
+    flag(cell);
   };
-
   useEffect(() => {
     gameBoardEl.current.addEventListener('contextmenu', onRightClick);
     return () => {
-      gameBoardEl.current.removeEventListener('contextmenu');
+      gameBoardEl.current.removeEventListener('contextmenu', onRightClick);
     };
   });
-  const getContainerStyle = () => {
-    const style = {
+  const getContainerStyle = (): any => {
+    const style: any = {
       width: `${game[0].length}rem`,
       height: `${game.length}rem`
     };
     return style;
   };
+
+  const renderTiles = (): JSX.Element[][] => {
+    return game.map((row, rowIndex: number) => {
+      return row.map((gameValue, columnIndex: number) => {
+        const boardValue: number = isGameActive
+          ? board[rowIndex][columnIndex]
+          : 0;
+
+        console.log('isGameActive', isGameActive);
+
+        const id: string = `btn-${rowIndex}-${columnIndex}`;
+        return (
+          <GameButton
+            id={id}
+            row={rowIndex}
+            column={columnIndex}
+            key={id}
+            isSelected={gameValue === GameValues.Played}
+            boardValue={boardValue}
+            isFlagged={gameValue === GameValues.Flag}
+          />
+        );
+      });
+    });
+  };
+
   const renderBoard = () => {
     console.log(game);
     const jsx = (
@@ -72,29 +110,7 @@ export default ({
         css={styles.board}
         style={getContainerStyle()}
       >
-        {game.map((row, rowIndex: number) => {
-          return row.map((gameValue, columnIndex: number) => {
-            console.log(rowIndex, columnIndex);
-            const boardValue: number = isGameActive
-              ? board[rowIndex][columnIndex]
-              : 0;
-            const flagValue: boolean = isGameActive
-              ? Boolean(flags[rowIndex][columnIndex])
-              : false;
-            const id: string = `btn-${rowIndex}-${columnIndex}`;
-            return (
-              <GameButton
-                id={id}
-                row={rowIndex}
-                column={columnIndex}
-                key={id}
-                isSelected={Boolean(gameValue)}
-                boardValue={boardValue}
-                isFlagged={Boolean(flagValue)}
-              />
-            );
-          });
-        })}
+        {renderTiles()}
       </div>
     );
     return jsx;

@@ -2,7 +2,7 @@ import React, { ReactHTMLElement } from 'react';
 import { css } from '@emotion/core';
 import theme from 'styles/theme';
 
-import { CellValues } from 'stores/AppStoreProvider';
+import { BoardValues } from 'stores/AppStoreProvider';
 
 interface IProps {
   id: string;
@@ -15,7 +15,7 @@ interface IProps {
 
 const styles = {
   btn: css`
-    font-weight: ${theme.fontWeight.base};
+    font-size: 0.5rem;
     background: ${theme.color.gray.lighter};
     transition: background 0.25s linear;
     width: 1rem;
@@ -36,6 +36,9 @@ export default ({
   boardValue,
   id
 }: IProps): JSX.Element => {
+  /* eslint-disable-next-line */
+  console.log('GameButton   ', boardValue);
+
   const renderSelected = () => {
     return (
       <button css={[styles.btn, styles.checked]} disabled={isSelected}>
@@ -52,7 +55,9 @@ export default ({
         id={id}
         css={styles.btn}
         disabled={isSelected}
-      />
+      >
+        {boardValue === 0 ? '' : boardValue}
+      </button>
     );
   };
 
@@ -78,7 +83,7 @@ export default ({
   };
 
   const render = (): JSX.Element => {
-    if (isSelected && boardValue === CellValues.Bomb) {
+    if (isSelected && boardValue === BoardValues.Bomb) {
       return renderLoss();
     } else if (isSelected) {
       return renderSelected();
