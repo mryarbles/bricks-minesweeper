@@ -1,0 +1,15 @@
+{
+	"presets": [
+    "@babel/preset-env",
+		"react-app",
+		"mobx",
+		["@emotion/babel-preset-css-prop", {
+			"autoLabel": true,
+			"labelFormat": "[local]"
+		}]
+	],
+	"plugins": [
+		"emotion",
+    "@babel/plugin-transform-destructuring"
+	]
+}

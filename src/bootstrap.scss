@@ -1,0 +1,12 @@
+$theme-colors: (
+  "primary": #005BF0
+);
+
+@import "../node_modules/bootstrap/scss/bootstrap";
+
+.btn-primary {
+  color: #FFF;
+  &:hover {
+    color: #FFF;
+  }
+}

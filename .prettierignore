@@ -1,0 +1,6 @@
+build/*
+.storybook/*
+node_modules/*
+public/*
+*.yml
+*.snap

@@ -1,0 +1,5 @@
+build/*
+stores/*
+scripts/*
+config/*
+__snapshots__/*
