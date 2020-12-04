@@ -68,7 +68,7 @@ export default ({
             Rows
             <Input
               type="number"
-              min={5}
+              min={3}
               name="rows"
               defaultValue={formState.rows}
               onChange={onChange}
@@ -80,7 +80,7 @@ export default ({
             Columns
             <Input
               type="number"
-              min={5}
+              min={3}
               name="columns"
               defaultValue={formState.columns}
               onChange={onChange}
