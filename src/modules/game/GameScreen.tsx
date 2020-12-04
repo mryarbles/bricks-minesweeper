@@ -56,22 +56,25 @@ export default ({
     const cell = getCellFromEventTarget(event.target);
     play(cell);
   };
+
   const onRightClick = (event: MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
     const cell = getCellFromEventTarget(event.target);
     flag(cell);
   };
+
   useEffect(() => {
     gameBoardEl.current.addEventListener('contextmenu', onRightClick);
     return () => {
       gameBoardEl.current.removeEventListener('contextmenu', onRightClick);
     };
   });
+
   const getContainerStyle = (): any => {
     const style: any = {
-      width: `${game[0].length}rem`,
-      height: `${game.length}rem`
+      width: `${game[0].length * 2}rem`,
+      height: `${game.length * 2}rem`
     };
     return style;
   };
@@ -83,9 +86,8 @@ export default ({
           ? board[rowIndex][columnIndex]
           : 0;
 
-        console.log('isGameActive', isGameActive);
-
         const id: string = `btn-${rowIndex}-${columnIndex}`;
+
         return (
           <GameButton
             id={id}
@@ -102,7 +104,6 @@ export default ({
   };
 
   const renderBoard = () => {
-    console.log(game);
     const jsx = (
       <div
         onClick={onClick}

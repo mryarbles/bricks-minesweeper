@@ -1,6 +1,7 @@
 import React, { ReactHTMLElement } from 'react';
 import { css } from '@emotion/core';
 import theme from 'styles/theme';
+import { FaFontAwesomeFlag, FaBomb } from 'react-icons/fa';
 
 import { BoardValues } from 'stores/AppStoreProvider';
 
@@ -18,14 +19,29 @@ const styles = {
     font-size: 0.5rem;
     background: ${theme.color.gray.lighter};
     transition: background 0.25s linear;
-    width: 1rem;
-    height: 1rem;
+    width: 2rem;
+    height: 2rem;
     padding: 0;
     margin: 0;
+
+    svg {
+      pointer-events: none;
+    }
   `,
-  checked: css``,
-  flagged: css``,
-  loser: css``
+  selected: css`
+    background: ${theme.color.gray.lighter};
+  `,
+  flagged: css`
+    color: ${theme.color.red.error};
+  `,
+  loser: css`
+    background: ${theme.color.red.error};
+  `,
+  enabled: css`
+    &:hover {
+      background: ${theme.color.blue.light};
+    }
+  `
 };
 
 export default ({
@@ -36,62 +52,42 @@ export default ({
   boardValue,
   id
 }: IProps): JSX.Element => {
-  /* eslint-disable-next-line */
-  console.log('GameButton   ', boardValue);
-
-  const renderSelected = () => {
-    return (
-      <button css={[styles.btn, styles.checked]} disabled={isSelected}>
-        {boardValue === 0 ? '' : boardValue}
-      </button>
-    );
+  const renderInner = (): JSX.Element | number => {
+    if (isSelected && boardValue === BoardValues.Bomb) {
+      return <FaBomb />;
+    } else if (isSelected) {
+      return boardValue === 0 ? null : boardValue;
+    } else if (isFlagged) {
+      return <FaFontAwesomeFlag />;
+    }
+    return null;
   };
 
-  const renderEnabled = () => {
-    return (
-      <button
-        data-row={row}
-        data-column={column}
-        id={id}
-        css={styles.btn}
-        disabled={isSelected}
-      >
-        {boardValue === 0 ? '' : boardValue}
-      </button>
-    );
-  };
+  const renderOuter = () => {
+    const props: any = {
+      css: [styles.btn],
+      'data-row': row,
+      'data-column': column,
+      id
+    };
 
-  const renderFlagged = () => {
-    return (
-      <button
-        data-row={row}
-        data-column={column}
-        id={id}
-        css={[styles.btn, styles.flagged]}
-      >
-        {boardValue === 0 ? '' : boardValue}
-      </button>
-    );
-  };
+    if (isSelected && boardValue === BoardValues.Bomb) {
+      props.disabled = true;
+      props.css.push(styles.loser);
+    } else if (isSelected) {
+      props.css.push(styles.selected);
+      props.disabled = true;
+    } else if (isFlagged) {
+      props.css.push(styles.flagged);
+    } else {
+      props.css.push(styles.enabled);
+    }
 
-  const renderLoss = () => {
-    return (
-      <button css={[styles.btn, styles.loser]}>
-        {boardValue === 0 ? '' : boardValue}
-      </button>
-    );
+    return <button {...props}>{renderInner()}</button>;
   };
 
   const render = (): JSX.Element => {
-    if (isSelected && boardValue === BoardValues.Bomb) {
-      return renderLoss();
-    } else if (isSelected) {
-      return renderSelected();
-    } else if (isFlagged) {
-      return renderFlagged();
-    } else {
-      return renderEnabled();
-    }
+    return renderOuter();
   };
 
   return render();

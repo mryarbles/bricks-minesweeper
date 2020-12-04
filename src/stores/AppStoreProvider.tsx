@@ -203,8 +203,6 @@ export default ({ children }: IProps): JSX.Element => {
 
   const processCell = (board: Board, game: Board, cell: Cell): Cell[] => {
     let queue: Cell[] = [];
-    //const boardValue: number = board[cell[0]][cell[1]];
-    //const gameValue: number = game[cell[0]][cell[1]];
 
     queue = getLinkedCell(queue, board, game, cell, -1, -1);
     queue = getLinkedCell(queue, board, game, cell, 0, -1);
@@ -262,8 +260,6 @@ export default ({ children }: IProps): JSX.Element => {
       brd = board;
     }
 
-    debugger;
-
     if (brd[cell[0]][cell[1]] === BoardValues.Bomb) {
       lose();
     } else {
@@ -271,7 +267,17 @@ export default ({ children }: IProps): JSX.Element => {
     }
   };
 
-  const flag = (cell: Cell): void => {};
+  const flag = (cell: Cell): void => {
+    let gameClone: Board = cloneMultiDimArray(game);
+
+    if (gameClone[cell[0]][cell[1]] === GameValues.Empty) {
+      gameClone = updateBoardCell(gameClone, cell, GameValues.Flag);
+    } else {
+      gameClone = updateBoardCell(gameClone, cell, GameValues.Empty);
+    }
+
+    setGame(gameClone);
+  };
 
   const [isInitialized, setInitialized] = useState(false);
   const [isGameActive, setGameActive] = useState(false);
