@@ -1,7 +1,6 @@
 
 const webpack = require('webpack')
 const env = require('dotenv').config();
-const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
 /*
 This file configures react-app-rewired
