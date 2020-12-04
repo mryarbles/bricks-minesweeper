@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import Board from '../models/Board';
 
@@ -196,6 +196,7 @@ export default ({ children }: IProps): JSX.Element => {
     const targRow: number = cell[0] + offsetY;
     const targCol: number = cell[1] + offsetX;
 
+    // if the cell is out of bounds return current queue
     if (
       typeof board[targRow] === 'undefined' ||
       typeof board[targRow][targCol] === 'undefined'
@@ -286,11 +287,12 @@ export default ({ children }: IProps): JSX.Element => {
   };
 
   const playComplete = (updatedGame: Board): void => {
+    // is there a way to get rid of this addition algo?
     const playsCount: number = updatedGame
       .flat()
       .filter((value: number) => value === GameValues.Played).length;
     setGame(updatedGame);
-    if (playsCount === rows * columns - bombs) {
+    if (playsCount === ((rows * columns) - bombs)) {
       win();
     }
 
