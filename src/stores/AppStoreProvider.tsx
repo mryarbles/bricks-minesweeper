@@ -86,7 +86,7 @@ export default ({ children }: IProps): JSX.Element => {
     return game;
   };
 
-  const getLinkedCell = (
+  const processLinkedCell = (
     queue: Cell[],
     board: Board,
     game: Board,
@@ -128,19 +128,16 @@ export default ({ children }: IProps): JSX.Element => {
 
   const processCell = (board: Board, game: Board, cell: Cell): Cell[] => {
     let queue: Cell[] = [];
-
-    queue = getLinkedCell(queue, board, game, cell, -1, -1);
-    queue = getLinkedCell(queue, board, game, cell, 0, -1);
-    queue = getLinkedCell(queue, board, game, cell, 1, -1);
-    queue = getLinkedCell(queue, board, game, cell, -1, 0);
-    queue = getLinkedCell(queue, board, game, cell, 1, 0);
-    queue = getLinkedCell(queue, board, game, cell, -1, 1);
-    queue = getLinkedCell(queue, board, game, cell, 0, 1);
-    queue = getLinkedCell(queue, board, game, cell, 1, 1);
-
+    queue = processLinkedCell(queue, board, game, cell, -1, -1);
+    queue = processLinkedCell(queue, board, game, cell, 0, -1);
+    queue = processLinkedCell(queue, board, game, cell, 1, -1);
+    queue = processLinkedCell(queue, board, game, cell, -1, 0);
+    queue = processLinkedCell(queue, board, game, cell, 1, 0);
+    queue = processLinkedCell(queue, board, game, cell, -1, 1);
+    queue = processLinkedCell(queue, board, game, cell, 0, 1);
+    queue = processLinkedCell(queue, board, game, cell, 1, 1);
     // update the game cell as played
     game[cell[0]][cell[1]] = GameValues.Played;
-
     return queue;
   };
 
