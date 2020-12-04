@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 
-import Board from '../models/Board';
+import Board from 'models/Board';
 
-import Screens from '../constants/Screens';
-import Cell from '../models/Cell';
+import ScreensConfig from 'ScreensConfig';
+import Cell from 'models/Cell';
+import cloneMultiDimArray from 'utils/cloneMultiDimArray';
+import BoardUtils from './utils/BoardUtils';
+import Settings from 'utils/Settings';
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   BASE: 'MS_',
   BOMBS: 'BOMBS',
   ROWS: 'ROWS',
@@ -60,108 +63,6 @@ interface IProps {
   children: JSX.Element;
 }
 
-const modifyBoardCell = (arr: Board, cell: Cell, value: number): Board => {
-  arr[cell[0]][cell[1]] = value;
-  return arr;
-};
-
-const incBoardCell = (
-  arr: Board,
-  startCell: Cell,
-  offsetX: number,
-  offsetY: number
-): Board => {
-  const targRow: number = startCell[0] + offsetY;
-  const targCol: number = startCell[1] + offsetX;
-  if (
-    typeof arr[targRow] !== 'undefined' &&
-    typeof arr[targRow][targCol] !== 'undefined'
-  ) {
-    const oldValue = arr[targRow][targCol];
-    const newValue =
-      oldValue < BoardValues.Bomb ? oldValue + 1 : BoardValues.Bomb;
-    return modifyBoardCell(arr, [targRow, targCol], newValue);
-  }
-  return arr;
-};
-
-const incAroundBomb = (arr: Board, bombCell: Cell) => {
-  let b: Board = incBoardCell(arr, bombCell, -1, -1);
-  b = incBoardCell(arr, bombCell, -1, 0);
-  b = incBoardCell(arr, bombCell, -1, 1);
-  b = incBoardCell(arr, bombCell, 0, -1);
-  b = incBoardCell(arr, bombCell, 0, 1);
-  b = incBoardCell(arr, bombCell, 1, -1);
-  b = incBoardCell(arr, bombCell, 1, 0);
-  b = incBoardCell(arr, bombCell, 1, 1);
-  return b;
-};
-
-const getSetting = (key: string, defaultValue?: any): any => {
-  let value = null;
-  if (window && window.localStorage) {
-    value = window.localStorage.getItem(`${STORAGE_KEYS.BASE}${key}`);
-  }
-
-  if (!value && defaultValue) {
-    return defaultValue;
-  }
-
-  return value;
-};
-
-const setSetting = (key: string, value?: any): void => {
-  if (window && window.localStorage) {
-    if (!value) {
-      window.localStorage.removeItem(`${STORAGE_KEYS.BASE}${key}`);
-    } else {
-      window.localStorage.setItem(
-        `${STORAGE_KEYS.BASE}${key}`,
-        value as string
-      );
-    }
-  }
-};
-
-export const cloneMultiDimArray = (arr: any[][]): any[][] => {
-  return arr.map((subArr: any[]) => subArr.slice());
-};
-
-export const getRandomCell = (cr: number, cc: number): Cell => {
-  const randR: number = Math.round(Math.random() * (cr - 1));
-  const randC: number = Math.round(Math.random() * (cc - 1));
-  return [randR, randC];
-};
-
-export const buildEmptyMatrix = (r: number, c: number): Board => {
-  const mat: Board = [];
-  let rowCount: number = 0;
-  while (rowCount < r) {
-    const rarr = new Array(c).fill(BoardValues.Empty);
-    mat.push(rarr);
-    rowCount += 1;
-  }
-  return mat;
-};
-
-export const buildBoard = (
-  r: number,
-  c: number,
-  b: number,
-  initialPlay: [number, number]
-): Board => {
-  const board: Board = buildEmptyMatrix(r, c);
-  while (b > 0) {
-    const bombCell: [number, number] = getRandomCell(r, c);
-    if (bombCell[0] !== initialPlay[0] && bombCell[1] !== initialPlay[1]) {
-      board[bombCell[0]][bombCell[1]] = BoardValues.Bomb;
-      incAroundBomb(board, bombCell);
-      b -= 1;
-    }
-  }
-  return board;
-};
-
 // exporting unwrapped component for testing purposes.
 export default ({ children }: IProps): JSX.Element => {
   const [isInitialized, setInitialized] = useState(false);
@@ -170,7 +71,7 @@ export default ({ children }: IProps): JSX.Element => {
   const [columns, setColumns] = useState(0);
   const [bombs, setBombs] = useState(0);
   const [flags, setFlags] = useState(0);
-  const [screen, setScreen] = useState(Screens.intro.id);
+  const [screen, setScreen] = useState(ScreensConfig.intro.id);
   const [game, setGame] = useState([]);
   const [board, setBoard] = useState([]);
   const [result, setResult] = useState(ResultValues.None);
@@ -276,21 +177,29 @@ export default ({ children }: IProps): JSX.Element => {
   };
 
   const clearSavedGame = () => {
-    setSetting(STORAGE_KEYS.BOARD);
-    setSetting(STORAGE_KEYS.GAME);
+    Settings.setSetting(STORAGE_KEYS.BOARD);
+    Settings.setSetting(STORAGE_KEYS.GAME);
   };
 
   const gotoEnd = () => {
     setTimeout(() => {
-      setScreen(Screens.end.id);
+      setScreen(ScreensConfig.end.id);
     }, 2000);
   };
 
   const playComplete = (updatedGame: Board): void => {
-    // is there a way to get rid of this addition algo?
+    /*
+    TODO: We could keep track of the number of plays within the play execution algorithm and the state
+    to alleviate this extra operation.
+     */
+    console.time('victory resolution');
+
     const playsCount: number = updatedGame
       .flat()
       .filter((value: number) => value === GameValues.Played).length;
+
+    console.timeEnd('victory resolution');
+
     setGame(updatedGame);
     if (playsCount === ((rows * columns) - bombs)) {
       win();
@@ -298,7 +207,7 @@ export default ({ children }: IProps): JSX.Element => {
 
     // save the game state
     setTimeout(() => {
-      setSetting(STORAGE_KEYS.GAME, JSON.stringify(updatedGame));
+      Settings.setSetting(STORAGE_KEYS.GAME, JSON.stringify(updatedGame));
     }, 0);
   };
 
@@ -308,17 +217,20 @@ export default ({ children }: IProps): JSX.Element => {
 
   const play = (cell: Cell): void => {
     let brd: Board;
+
+    console.time('game cloning');
     let gameClone = cloneMultiDimArray(game);
+    console.timeEnd('game cloning');
 
     if (!isGameActive) {
       setGameActive(true);
-      brd = buildBoard(rows, columns, bombs, cell);
+      brd = BoardUtils.buildBoard(rows, columns, bombs, GameValues.Empty, cell);
       setBoard(brd);
       gameClone = updateBoardCell(gameClone, cell, GameValues.Played);
 
       // save the board
       setTimeout(() => {
-        setSetting(STORAGE_KEYS.BOARD, JSON.stringify(brd));
+        Settings.setSetting(STORAGE_KEYS.BOARD, JSON.stringify(brd));
       }, 0);
     } else {
       brd = board;
@@ -353,12 +265,11 @@ export default ({ children }: IProps): JSX.Element => {
     setRows(rowVal);
     setColumns(columnVal);
     setBombs(bombVal);
-    setScreen(Screens.game.id);
-    setGame(buildEmptyMatrix(rowVal, columnVal));
-
-    setSetting(STORAGE_KEYS.ROWS, rowVal.toString(10));
-    setSetting(STORAGE_KEYS.COLUMNS, columnVal.toString(10));
-    setSetting(STORAGE_KEYS.BOMBS, bombVal.toString(10));
+    setScreen(ScreensConfig.game.id);
+    setGame(BoardUtils.buildEmptyMatrix(rowVal, columnVal, BoardValues.Empty));
+    Settings.setSetting(STORAGE_KEYS.ROWS, rowVal.toString(10));
+    Settings.setSetting(STORAGE_KEYS.COLUMNS, columnVal.toString(10));
+    Settings.setSetting(STORAGE_KEYS.BOMBS, bombVal.toString(10));
     return true;
   };
 
@@ -374,7 +285,7 @@ export default ({ children }: IProps): JSX.Element => {
     setGameActive(false);
     setResult(ResultValues.None);
     setInitialized(false);
-    setScreen(Screens.intro.id);
+    setScreen(ScreensConfig.intro.id);
   };
 
   //********************
@@ -383,30 +294,30 @@ export default ({ children }: IProps): JSX.Element => {
   useEffect(() => {
     if (!isInitialized) {
       const rows: number = parseInt(
-        getSetting(STORAGE_KEYS.ROWS, DEFAULTS.ROWS) as string,
+        Settings.getSetting(STORAGE_KEYS.ROWS, DEFAULTS.ROWS) as string,
         10
       );
       const columns: number = parseInt(
-        getSetting(STORAGE_KEYS.COLUMNS, DEFAULTS.COLUMNS) as string,
+        Settings.getSetting(STORAGE_KEYS.COLUMNS, DEFAULTS.COLUMNS) as string,
         10
       );
       const bombs: number = parseInt(
-        getSetting(STORAGE_KEYS.BOMBS, DEFAULTS.COLUMNS) as string,
+        Settings.getSetting(STORAGE_KEYS.BOMBS, DEFAULTS.COLUMNS) as string,
         10
       );
 
       setRows(rows);
       setColumns(columns);
       setBombs(bombs);
-      const savedGameJson = getSetting(STORAGE_KEYS.GAME);
+      const savedGameJson = Settings.getSetting(STORAGE_KEYS.GAME);
       const hasSaveGame: boolean = typeof savedGameJson === 'string';
       if (hasSaveGame) {
-        const savedBoardJson: string = getSetting(STORAGE_KEYS.BOARD);
+        const savedBoardJson: string = Settings.getSetting(STORAGE_KEYS.BOARD);
         const savedBoard: Board = JSON.parse(savedBoardJson);
         const savedGame: Board = JSON.parse(savedGameJson);
         setGame(savedGame);
         setBoard(savedBoard);
-        setScreen(Screens.game.id);
+        setScreen(ScreensConfig.game.id);
         setGameActive(true);
       }
       setInitialized(true);

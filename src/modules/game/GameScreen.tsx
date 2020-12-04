@@ -46,11 +46,11 @@ const styles = {
     height: 25vh;
     font-size: 12rem;
     color: red;
-    text-align: center;
     text-shadow: 12px 12px black;
+    margin-top: -60px; // TODO: figure out why this is necessary.
     ${theme.mixins.centeredDiv}
   `,
-  background: css`
+  modalOverlay: css`
     background: rgba(255, 255, 255, 0.5);
     position: fixed;
     width: 100vw;
@@ -139,7 +139,7 @@ export default ({
 
     if (hasResult) {
       return (
-        <div css={styles.background}>
+        <div css={styles.modalOverlay}>
           <div css={[styles.result, iconStyle]}>{icon}</div>
         </div>
       );

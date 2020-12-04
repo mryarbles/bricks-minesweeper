@@ -1,9 +1,9 @@
-import IntroState from '../stores/IntroStateConsumer';
-import IntroScreen, { IIntroScreenProps } from '../modules/intro/IntroScreen';
-import GameState from '../stores/GameStateConsumer';
-import GameScreen, { IGameScreenProps } from '../modules/game/GameScreen';
-import EndState from '../stores/EndStateConsumer';
-import EndScreen, { IEndScreenProps } from '../modules/end/EndScreen';
+import IntroState from './stores/IntroStateConsumer';
+import IntroScreen, { IIntroScreenProps } from './modules/intro/IntroScreen';
+import GameState from './stores/GameStateConsumer';
+import GameScreen, { IGameScreenProps } from './modules/game/GameScreen';
+import EndState from './stores/EndStateConsumer';
+import EndScreen, { IEndScreenProps } from './modules/end/EndScreen';
 import React from 'react';
 
 export interface IScreenConfig {
@@ -11,7 +11,7 @@ export interface IScreenConfig {
   factory: () => JSX.Element;
 }
 
-const Screens: Record<string, IScreenConfig> = {
+const ScreensConfig: Record<string, IScreenConfig> = {
   intro: {
     id: 'intro',
     factory: (): JSX.Element => (
@@ -38,4 +38,4 @@ const Screens: Record<string, IScreenConfig> = {
   }
 };
 
-export default Screens;
+export default ScreensConfig;
