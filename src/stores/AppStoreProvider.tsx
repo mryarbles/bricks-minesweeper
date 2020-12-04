@@ -7,29 +7,13 @@ import Board from '../models/Board';
 import Screens from '../constants/Screens';
 import Cell from '../models/Cell';
 
-export const AppStoreContext = React.createContext({
-  screen: null,
-  rows: 0,
-  columns: 0,
-  bombs: 0,
-  board: [],
-  flags: [],
-  game: [],
-  isGameActive: false,
-  startGame: null,
-  play: null,
-  flag: null
-});
-
-interface IProps {
-  children: JSX.Element;
-}
-
 const STORAGE_KEYS = {
   BASE: 'MS_',
   BOMBS: 'BOMBS',
   ROWS: 'ROWS',
-  COLUMNS: 'COLUMNS'
+  COLUMNS: 'COLUMNS',
+  GAME: 'GAME',
+  BOARD: 'BOARD'
 };
 
 const DEFAULTS: Record<string, string | number> = {
@@ -46,6 +30,34 @@ export enum GameValues {
   Flag = 2,
   Empty = 0,
   Played = 1
+}
+
+export enum ResultValues {
+  None,
+  Loser,
+  Winner
+}
+
+export const AppStoreContext = React.createContext({
+  screen: null,
+  rows: 0,
+  columns: 0,
+  bombs: 0,
+  board: [],
+  flags: 0,
+  game: [],
+  hasResult: false,
+  result: ResultValues.None,
+  isGameActive: false,
+  startGame: null,
+  play: null,
+  flag: null,
+  playAgain: null,
+  reset: null
+});
+
+interface IProps {
+  children: JSX.Element;
 }
 
 const modifyBoardCell = (arr: Board, cell: Cell, value: number): Board => {
@@ -85,20 +97,29 @@ const incAroundBomb = (arr: Board, bombCell: Cell) => {
   return b;
 };
 
-const getSetting = (
-  key: string,
-  defaultValue: string | number
-): number | string => {
+const getSetting = (key: string, defaultValue?: any): any => {
   let value = null;
   if (window && window.localStorage) {
     value = window.localStorage.getItem(`${STORAGE_KEYS.BASE}${key}`);
   }
-  return value || defaultValue;
+
+  if (!value && defaultValue) {
+    return defaultValue;
+  }
+
+  return value;
 };
 
-const setSetting = (key: string, value: number | string): void => {
+const setSetting = (key: string, value?: any): void => {
   if (window && window.localStorage) {
-    window.localStorage.setItem(`${STORAGE_KEYS.BASE}${key}`, value as string);
+    if (!value) {
+      window.localStorage.removeItem(`${STORAGE_KEYS.BASE}${key}`);
+    } else {
+      window.localStorage.setItem(
+        `${STORAGE_KEYS.BASE}${key}`,
+        value as string
+      );
+    }
   }
 };
 
@@ -143,19 +164,21 @@ export const buildBoard = (
 
 // exporting unwrapped component for testing purposes.
 export default ({ children }: IProps): JSX.Element => {
-  const startGame = (rowVal: number, columnVal: number, bombVal: number) => {
-    // TODO: need a way to disallow too many bombs
-    setRows(rowVal);
-    setColumns(columnVal);
-    setBombs(bombVal);
-    setScreen(Screens.game.id);
-    setGame(buildEmptyMatrix(rowVal, columnVal));
+  const [isInitialized, setInitialized] = useState(false);
+  const [isGameActive, setGameActive] = useState(false);
+  const [rows, setRows] = useState(0);
+  const [columns, setColumns] = useState(0);
+  const [bombs, setBombs] = useState(0);
+  const [flags, setFlags] = useState(0);
+  const [screen, setScreen] = useState(Screens.intro.id);
+  const [game, setGame] = useState([]);
+  const [board, setBoard] = useState([]);
+  const [result, setResult] = useState(ResultValues.None);
+  const [hasResult, setHasResult] = useState(false);
 
-    setSetting(STORAGE_KEYS.ROWS, rowVal.toString(10));
-    setSetting(STORAGE_KEYS.COLUMNS, columnVal.toString(10));
-    setSetting(STORAGE_KEYS.BOMBS, bombVal.toString(10));
-    return true;
-  };
+  //********************
+  // Inner
+  // *******************
 
   const updateBoardCell = (game: Board, cell: Cell, value: number): Board => {
     game[cell[0]][cell[1]] = value;
@@ -238,13 +261,48 @@ export default ({ children }: IProps): JSX.Element => {
   };
 
   const lose = () => {
-    /* eslint-disable-next-line */
-    console.log('AppStoreProvider.lose  ');
+    setHasResult(true);
+    setResult(ResultValues.Loser);
+    gotoEnd();
+    clearSavedGame();
+  };
+
+  const win = () => {
+    setHasResult(true);
+    setResult(ResultValues.Winner);
+    gotoEnd();
+    clearSavedGame();
+  };
+
+  const clearSavedGame = () => {
+    setSetting(STORAGE_KEYS.BOARD);
+    setSetting(STORAGE_KEYS.GAME);
+  };
+
+  const gotoEnd = () => {
+    setTimeout(() => {
+      setScreen(Screens.end.id);
+    }, 2000);
   };
 
   const playComplete = (updatedGame: Board): void => {
+    const playsCount: number = updatedGame
+      .flat()
+      .filter((value: number) => value === GameValues.Played).length;
     setGame(updatedGame);
+    if (playsCount === rows * columns - bombs) {
+      win();
+    }
+
+    // save the game state
+    setTimeout(() => {
+      setSetting(STORAGE_KEYS.GAME, JSON.stringify(updatedGame));
+    }, 0);
   };
+
+  //********************
+  // API
+  // *******************
 
   const play = (cell: Cell): void => {
     let brd: Board;
@@ -254,8 +312,12 @@ export default ({ children }: IProps): JSX.Element => {
       setGameActive(true);
       brd = buildBoard(rows, columns, bombs, cell);
       setBoard(brd);
-      // add
       gameClone = updateBoardCell(gameClone, cell, GameValues.Played);
+
+      // save the board
+      setTimeout(() => {
+        setSetting(STORAGE_KEYS.BOARD, JSON.stringify(brd));
+      }, 0);
     } else {
       brd = board;
     }
@@ -268,27 +330,54 @@ export default ({ children }: IProps): JSX.Element => {
   };
 
   const flag = (cell: Cell): void => {
+    if (flags === bombs) return;
+
     let gameClone: Board = cloneMultiDimArray(game);
 
     if (gameClone[cell[0]][cell[1]] === GameValues.Empty) {
+      const f = flags + 1;
+      setFlags(f);
       gameClone = updateBoardCell(gameClone, cell, GameValues.Flag);
     } else {
+      const f = flags - 1;
       gameClone = updateBoardCell(gameClone, cell, GameValues.Empty);
     }
 
     setGame(gameClone);
   };
 
-  const [isInitialized, setInitialized] = useState(false);
-  const [isGameActive, setGameActive] = useState(false);
-  const [rows, setRows] = useState(0);
-  const [columns, setColumns] = useState(0);
-  const [bombs, setBombs] = useState(0);
-  const [screen, setScreen] = useState(Screens.intro.id);
-  const [game, setGame] = useState([]);
-  const [board, setBoard] = useState([]);
+  const startGame = (rowVal: number, columnVal: number, bombVal: number) => {
+    // TODO: need a way to disallow too many bombs
+    setRows(rowVal);
+    setColumns(columnVal);
+    setBombs(bombVal);
+    setScreen(Screens.game.id);
+    setGame(buildEmptyMatrix(rowVal, columnVal));
 
-  // initialize app.
+    setSetting(STORAGE_KEYS.ROWS, rowVal.toString(10));
+    setSetting(STORAGE_KEYS.COLUMNS, columnVal.toString(10));
+    setSetting(STORAGE_KEYS.BOMBS, bombVal.toString(10));
+    return true;
+  };
+
+  const playAgain = () => {
+    setHasResult(false);
+    setGameActive(false);
+    setResult(ResultValues.None);
+    startGame(rows, columns, bombs);
+  };
+
+  const reset = () => {
+    setHasResult(false);
+    setGameActive(false);
+    setResult(ResultValues.None);
+    setInitialized(false);
+    setScreen(Screens.intro.id);
+  };
+
+  //********************
+  // Init
+  // *******************
   useEffect(() => {
     if (!isInitialized) {
       const rows: number = parseInt(
@@ -303,13 +392,20 @@ export default ({ children }: IProps): JSX.Element => {
         getSetting(STORAGE_KEYS.BOMBS, DEFAULTS.COLUMNS) as string,
         10
       );
+
       setRows(rows);
       setColumns(columns);
       setBombs(bombs);
-      const savedGame: string = getSetting('SAVE', '') as string;
-      const hasSaveGame: boolean = savedGame.length > 0;
+      const savedGameJson = getSetting(STORAGE_KEYS.GAME);
+      const hasSaveGame: boolean = typeof savedGameJson === 'string';
       if (hasSaveGame) {
+        const savedBoardJson: string = getSetting(STORAGE_KEYS.BOARD);
+        const savedBoard: Board = JSON.parse(savedBoardJson);
+        const savedGame: Board = JSON.parse(savedGameJson);
+        setGame(savedGame);
+        setBoard(savedBoard);
         setScreen(Screens.game.id);
+        setGameActive(true);
       }
       setInitialized(true);
     }
@@ -332,7 +428,11 @@ export default ({ children }: IProps): JSX.Element => {
       game,
       board,
       isGameActive,
+      hasResult,
+      result,
+      playAgain,
       startGame,
+      reset,
       play,
       flag
     };

@@ -6,11 +6,13 @@ import React, {
 } from 'react';
 import { css } from '@emotion/core';
 
+import { FaSmile, FaSkull } from 'react-icons/fa';
+
 import Board from 'models/Board';
 import Cell from 'models/Cell';
 import GameButton from './components/GameButton';
 import theme from 'styles/theme';
-import { GameValues } from '../../stores/AppStoreProvider';
+import { GameValues, ResultValues } from '../../stores/AppStoreProvider';
 
 export const getCellFromEventTarget = (target: any): Cell => {
   const row: number = parseInt(target.getAttribute('data-row'), 10);
@@ -21,7 +23,8 @@ export const getCellFromEventTarget = (target: any): Cell => {
 export interface IGameScreenProps {
   board: Board;
   game: Board;
-  flags: Board;
+  result: number;
+  hasResult: boolean;
   isGameActive: boolean;
   play: (cell: Cell) => void;
   flag: (cell: Cell) => void;
@@ -37,15 +40,38 @@ const styles = {
     align-items: stretch;
     align-content: center;
     ${theme.mixins.centeredDiv}
+  `,
+  result: css`
+    width: 25vw;
+    height: 25vh;
+    font-size: 12rem;
+    color: red;
+    text-align: center;
+    text-shadow: 12px 12px black;
+    ${theme.mixins.centeredDiv}
+  `,
+  background: css`
+    background: rgba(255, 255, 255, 0.5);
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+  `,
+  winner: css`
+    color: blue;
+  `,
+  loser: css`
+    color: red;
   `
 };
 
 export default ({
   board,
   game,
-  flags,
   play,
   flag,
+  result,
+  hasResult,
   isGameActive
 }: IGameScreenProps): JSX.Element => {
   const gameBoardEl = useRef(null);
@@ -67,7 +93,8 @@ export default ({
   useEffect(() => {
     gameBoardEl.current.addEventListener('contextmenu', onRightClick);
     return () => {
-      gameBoardEl.current.removeEventListener('contextmenu', onRightClick);
+      if (gameBoardEl && gameBoardEl.current)
+        gameBoardEl.current.removeEventListener('contextmenu', onRightClick);
     };
   });
 
@@ -97,14 +124,31 @@ export default ({
             isSelected={gameValue === GameValues.Played}
             boardValue={boardValue}
             isFlagged={gameValue === GameValues.Flag}
+            hasResult={hasResult}
+            result={result}
           />
         );
       });
     });
   };
 
+  const renderResult = () => {
+    const icon = result === ResultValues.Winner ? <FaSmile /> : <FaSkull />;
+    const iconStyle =
+      result === ResultValues.Winner ? styles.winner : styles.loser;
+
+    if (hasResult) {
+      return (
+        <div css={styles.background}>
+          <div css={[styles.result, iconStyle]}>{icon}</div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const renderBoard = () => {
-    const jsx = (
+    return (
       <div
         onClick={onClick}
         ref={gameBoardEl}
@@ -114,8 +158,12 @@ export default ({
         {renderTiles()}
       </div>
     );
-    return jsx;
   };
 
-  return renderBoard();
+  return (
+    <>
+      {renderResult()}
+      {renderBoard()}
+    </>
+  );
 };

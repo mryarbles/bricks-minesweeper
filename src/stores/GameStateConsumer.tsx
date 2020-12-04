@@ -10,9 +10,10 @@ export default ({ children }: IProps): JSX.Element => {
     columns,
     game,
     board,
-    flags,
     play,
     flag,
+    result,
+    hasResult,
     isGameActive
   } = useContext(AppStoreContext);
   return children({
@@ -20,8 +21,9 @@ export default ({ children }: IProps): JSX.Element => {
     columns,
     game,
     board,
-    flags,
     play,
+    result,
+    hasResult,
     flag,
     isGameActive
   });

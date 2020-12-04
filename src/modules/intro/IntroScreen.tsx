@@ -19,9 +19,13 @@ const styles = {
   container: css`
     font-weight: ${theme.fontWeight.base};
     padding: 6px 20px;
-    transition: background 0.25s linear;
-    margin: 0 0.25rem;
+    width: 400px;
+    height: 300px;
+    text-align: center;
     ${theme.mixins.centeredDiv}
+  `,
+  label: css`
+    width: 100px;
   `
 };
 
@@ -57,9 +61,10 @@ export default ({
 
   return (
     <div css={styles.container}>
+      <h1>Minesweeper</h1>
       <Form onSubmit={onSubmit}>
         <FormGroup>
-          <Label>
+          <Label css={styles.label}>
             Rows
             <Input
               type="number"
@@ -71,7 +76,7 @@ export default ({
           </Label>
         </FormGroup>
         <FormGroup>
-          <Label>
+          <Label css={styles.label}>
             Columns
             <Input
               type="number"
@@ -83,7 +88,7 @@ export default ({
           </Label>
         </FormGroup>
         <FormGroup>
-          <Label>
+          <Label css={styles.label}>
             Bombs
             <Input
               type="number"
