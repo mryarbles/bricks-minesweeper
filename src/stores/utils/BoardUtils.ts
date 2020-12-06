@@ -68,7 +68,10 @@ export const buildBoard = (
   const board: Board = buildEmptyMatrix(r, c, fillValue);
   while (b > 0) {
     const bombCell: [number, number] = getRandomCell(r, c);
-    if (bombCell[0] !== initialPlay[0] && bombCell[1] !== initialPlay[1]) {
+    if (
+      (bombCell[0] !== initialPlay[0] && bombCell[1] !== initialPlay[1])
+      && (board[bombCell[0]][bombCell[1]] !== BoardValues.Bomb))
+    {
       board[bombCell[0]][bombCell[1]] = BoardValues.Bomb;
       incAroundBomb(board, bombCell);
       b -= 1;
