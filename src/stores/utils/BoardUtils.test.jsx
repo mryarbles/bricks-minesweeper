@@ -2,12 +2,12 @@ import {
   buildBoard,
   getRandomCell,
   buildEmptyMatrix
-} from './AppStoreProvider';
+} from './BoardUtils';
 
 describe('stores.AppStoreProvider.buildBoard', () => {
   it('should build the board correctly', () => {
     let bombs = 5;
-    const board = buildBoard(5, 10, bombs, [5, 5]);
+    const board = buildBoard(5, 10, bombs, 0, [5, 5]);
     expect(board).toBeArray();
     expect(board).toBeArrayOfSize(5);
     expect(board[0]).toBeArrayOfSize(10);
@@ -21,10 +21,10 @@ describe('stores.AppStoreProvider.buildBoard', () => {
   });
 
   it('should not allow bomb in initial play cell', () => {
-    const board = buildBoard(2, 2, 1, [0, 0]);
+    const board = buildBoard(2, 2, 1, 0, [0, 0]);
     let x = 0;
     while (x++ < 100) {
-      expect(board[0][0]).toBe(0);
+      expect(board[0][0]).toBe(1);
     }
   });
 });
